@@ -171,6 +171,34 @@ def save_pages_produits_list(pages_dict):
             })
     return file_name  # on renvoie le nom du fichier créé
 
+def record_pages_produits_last_analysis(csv_path, in_pages, out_pages, url_to_lastmod):
+    """
+    Écrit un fichier contenant uniquement les résultats de la dernière analyse.
+    Ce fichier est réécrit à chaque nouvelle exécution.
+    """
+    fieldnames = ["date", "type", "url", "lastmod"]
+    now_str = datetime.now().strftime(DATE_FORMAT)
+
+    # Réécriture complète du fichier pour ne garder que la dernière analyse
+    with open(csv_path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for u in in_pages:
+            writer.writerow({
+                "date": now_str,
+                "type": "IN",
+                "url": u,
+                "lastmod": url_to_lastmod.get(u, "")
+            })
+        for u in out_pages:
+            writer.writerow({
+                "date": now_str,
+                "type": "OUT",
+                "url": u,
+                "lastmod": ""
+            })
+
 # ------------------------------------------------------------------------
 # 3) Fonction principale d'analyse (au lieu de main())
 # ------------------------------------------------------------------------
@@ -193,11 +221,12 @@ def run_sitemap_analysis():
     # pages_produits
     in_pages_produits = [u for u in in_urls if categorize_url(u, CATEGORIES, FALLBACK_CATEGORY) == "pages_produits"]
     out_pages_produits = [u for u in out_urls if categorize_url(u, CATEGORIES, FALLBACK_CATEGORY) == "pages_produits"]
+    PAGES_PRODUITS_LAST_ANALYSIS_CSV = "pages_produits_last_analysis.csv"
 
     # Enregistrement
     record_pages_produits_in_out(PAGES_PRODUITS_IN_OUT_CSV, in_pages_produits, out_pages_produits)
     record_pages_produits_in_out_list(PAGES_PRODUITS_IN_OUT_LIST_CSV, in_pages_produits, out_pages_produits, url_to_lastmod)
-
+    record_pages_produits_last_analysis(PAGES_PRODUITS_LAST_ANALYSIS_CSV, in_pages_produits, out_pages_produits, url_to_lastmod)
     # Maj historique
     save_urls(OLD_URLS_FILE, new_urls)
 
